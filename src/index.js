@@ -16,6 +16,8 @@ import {
   ActivityIndicator
 } from 'react-native'
 
+const { width, height } = Dimensions.get('window')
+
 /**
  * Default styles
  * @type {StyleSheetPropType}
@@ -114,10 +116,6 @@ export default class extends Component {
       PropTypes.object,
       PropTypes.number,
     ]),
-    scrollViewStyle: PropTypes.oneOfType([
-      PropTypes.object,
-      PropTypes.number,
-    ]),
     pagingEnabled: PropTypes.bool,
     showsHorizontalScrollIndicator: PropTypes.bool,
     showsVerticalScrollIndicator: PropTypes.bool,
@@ -181,12 +179,6 @@ export default class extends Component {
   state = this.initState(this.props)
 
   /**
-   * Initial render flag
-   * @type {bool}
-   */
-  initialRender = true
-
-  /**
    * autoplay timer
    * @type {null}
    */
@@ -232,30 +224,12 @@ export default class extends Component {
     }
 
     // Default: horizontal
-    const { width, height } = Dimensions.get('window')
-
     initState.dir = props.horizontal === false ? 'y' : 'x'
-
-    if (props.width) {
-      initState.width = props.width
-    } else if (this.state && this.state.width){
-      initState.width = this.state.width
-    } else {
-      initState.width = width;
-    }
-
-    if (props.height) {
-      initState.height = props.height
-    } else if (this.state && this.state.height){
-      initState.height = this.state.height
-    } else {
-      initState.height = height;
-    }
-
+    initState.width = props.width || width
+    initState.height = props.height || height
     initState.offset[initState.dir] = initState.dir === 'y'
       ? height * props.index
       : width * props.index
-
 
     this.internals = {
       ...this.internals,
@@ -289,17 +263,6 @@ export default class extends Component {
     if (!this.state.offset || width !== this.state.width || height !== this.state.height) {
       state.offset = offset
     }
-
-    // related to https://github.com/leecade/react-native-swiper/issues/570
-    // contentOffset is not working in react 0.48.x so we need to use scrollTo
-    // to emulate offset.
-    if (Platform.OS === 'ios') {
-      if (this.initialRender && this.state.total > 1) {
-        this.scrollView.scrollTo({...offset, animated: false})
-        this.initialRender = false;
-      }
-    }
-
     this.setState(state)
   }
 
@@ -524,7 +487,7 @@ export default class extends Component {
     if (this.state.total <= 1) return null
 
     let dots = []
-    const ActiveDot = this.props.activeDot || <View style={[{
+    const ActiveDot = this.props.activeDot(this.state.index) || <View style={[{
       backgroundColor: this.props.activeDotColor || '#007aff',
       width: 8,
       height: 8,
@@ -534,7 +497,7 @@ export default class extends Component {
       marginTop: 3,
       marginBottom: 3
     }, this.props.activeDotStyle]} />
-    const Dot = this.props.dot || <View style={[{
+    const Dot = this.props.dot(this.state.index) || <View style={[{
       backgroundColor: this.props.dotColor || 'rgba(0,0,0,.2)',
       width: 8,
       height: 8,
@@ -544,7 +507,7 @@ export default class extends Component {
       marginTop: 3,
       marginBottom: 3
     }, this.props.dotStyle ]} />
-    for (let i = 0; i < this.state.total; i++) {
+    for (let i = 0; i < this.state.total - 1; i++) {
       dots.push(i === this.state.index
         ? React.cloneElement(ActiveDot, {key: i})
         : React.cloneElement(Dot, {key: i})
@@ -630,8 +593,7 @@ export default class extends Component {
           contentOffset={this.state.offset}
           onScrollBeginDrag={this.onScrollBegin}
           onMomentumScrollEnd={this.onScrollEnd}
-          onScrollEndDrag={this.onScrollEndDrag}
-          style={this.props.scrollViewStyle}>
+          onScrollEndDrag={this.onScrollEndDrag}>
           {pages}
         </ScrollView>
        )
