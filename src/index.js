@@ -466,6 +466,7 @@ export default class extends Component {
     for (let prop in props) {
       // if(~scrollResponders.indexOf(prop)
       if (typeof props[prop] === 'function' &&
+        prop !== 'scrollEnabled' &&
         prop !== 'onMomentumScrollEnd' &&
         prop !== 'renderPagination' &&
         prop !== 'onScrollBeginDrag'
@@ -584,10 +585,14 @@ export default class extends Component {
   }
 
   renderScrollView = pages => {
+    const localProps = {
+      ...this.props,
+      scrollEnabled: this.props.scrollEnabled ? this.props.scrollEnabled(this.state.index) : true,
+    };
     if (Platform.OS === 'ios') {
       return (
         <ScrollView ref={this.refScrollView}
-          {...this.props}
+          {...localProps}
           {...this.scrollViewPropOverrides()}
           contentContainerStyle={[styles.wrapperIOS, this.props.style]}
           contentOffset={this.state.offset}
@@ -596,18 +601,18 @@ export default class extends Component {
           onScrollEndDrag={this.onScrollEndDrag}>
           {pages}
         </ScrollView>
-       )
+       );
     }
     return (
       <ViewPagerAndroid ref={this.refScrollView}
-        {...this.props}
+        {...localProps}
         initialPage={this.props.loop ? this.state.index + 1 : this.state.index}
         onPageSelected={this.onScrollEnd}
         key={pages.length}
         style={[styles.wrapperAndroid, this.props.style]}>
         {pages}
       </ViewPagerAndroid>
-    )
+    );
   }
 
   /**
